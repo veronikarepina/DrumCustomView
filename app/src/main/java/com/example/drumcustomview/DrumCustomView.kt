@@ -11,9 +11,9 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import java.net.HttpURLConnection
+import kotlinx.coroutines.withContext
 import java.net.URL
 import kotlin.properties.Delegates
 
@@ -142,7 +142,7 @@ class DrumCustomView(
         requestLayout()
     }
 
-    private fun getResult() {
+    private suspend fun getResult() {
         when (rotationResult.color) {
             Colors.RED -> rotationResult.text = Colors.RED.text
             Colors.ORANGE -> rotationResult.image = getImage()
@@ -195,19 +195,13 @@ class DrumCustomView(
         canvas.drawText(text, startTextX, startTextY, paint)
     }
 
-    private fun getImage(): Bitmap {
+    private suspend fun getImage(): Bitmap {
         val url = URL(IMAGES_URL)
-        runBlocking {
-            val job = launch(Dispatchers.IO) {
-                val connection = url.openConnection() as HttpURLConnection
-                connection.doInput = true
-                connection.connect()
-                val input = connection.inputStream
-                bitmap = BitmapFactory.decodeStream(input)
-            }
-            job.join()
-        }
-
+        bitmap = BitmapFactory.decodeStream(withContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
+                url.openConnection()
+            }.getInputStream()
+        })
         return bitmap
     }
 
@@ -231,7 +225,9 @@ class DrumCustomView(
             timer.cancel()
             rotationResult.clearFields()
             rotationResult.color = resultColor
-            getResult()
+            GlobalScope.launch {
+                getResult()
+            }
         }
     }
 
