@@ -10,6 +10,7 @@ import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -225,7 +226,7 @@ class DrumCustomView(
             timer.cancel()
             rotationResult.clearFields()
             rotationResult.color = resultColor
-            GlobalScope.launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 getResult()
             }
         }
